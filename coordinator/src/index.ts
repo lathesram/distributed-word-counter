@@ -44,9 +44,13 @@ function groupWordsByFirstLetter(words: string[]): Record<string, string[]> {
 }
 
 // Helper function to assign ranges to proposers
-function getProposerRanges(proposers: string[]): { proposer: string; range: [string, string] }[] {
+function getProposerRanges(
+  proposers: string[]
+): { proposer: string; range: [string, string] }[] {
   if (proposers.length < 3) {
-    throw new Error("Insufficient proposers: At least three proposers are required.");
+    throw new Error(
+      "Insufficient proposers: At least three proposers are required."
+    );
   }
   const ranges: { proposer: string; range: [string, string] }[] = [
     { proposer: proposers[0], range: ["a", "i"] },
@@ -55,6 +59,30 @@ function getProposerRanges(proposers: string[]): { proposer: string; range: [str
   ];
   console.log("Assigned ranges to proposers:", ranges);
   return ranges;
+}
+
+function resetWordCount() {
+  return axios.post("http://sidecar:4999/send", {
+    target: `${nodes.learner}/reset`,
+    payload: {},
+    source: "Coordinator",
+  });
+}
+
+function resetWordCountInProsper(url: string) {
+  return axios.post("http://sidecar:4999/send", {
+    target: `${url}/reset`,
+    payload: {},
+    source: "Coordinator",
+  });
+}
+
+function resetWordCountInAcceptor(url: string) {
+  return axios.post("http://sidecar:4999/send", {
+    target: `${url}/reset`,
+    payload: {},
+    source: "Coordinator",
+  });
 }
 
 // Endpoint for broadcasting document lines to all proposers
@@ -77,6 +105,16 @@ app.post("/broadcast", async (req: Request, res: Response) => {
     return res.status(500).json({ message: error });
   }
 
+  await resetWordCount();
+
+  nodes.proposers?.forEach(async (nodes) => {
+    await resetWordCountInProsper(nodes);
+  });
+
+  nodes?.acceptors?.forEach(async (nodes) => {
+    await resetWordCountInAcceptor(nodes);
+  });
+
   const promises = proposerRanges.map(({ proposer, range }) => {
     const [start, end] = range;
     const assignedWords = Object.entries(groupedWords)
@@ -85,8 +123,10 @@ app.post("/broadcast", async (req: Request, res: Response) => {
 
     console.log(`Sending words to proposer ${proposer}:`, assignedWords);
 
-    return axios.post(`${proposer}/process`, {
-      document: assignedWords.join(" "),
+    return axios.post("http://sidecar:4999/send", {
+      target: `${proposer}/process`,
+      payload: { document: assignedWords.join(" ") },
+      source: "Coordinator",
     });
   });
 

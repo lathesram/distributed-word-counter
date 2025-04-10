@@ -1,0 +1,17 @@
+{
+  "name": "acceptor_2",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "ts-node src/index.ts"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "typescript": "^4.5.4",
+    "ts-node": "^10.4.0",
+    "@types/node": "^16.11.7",
+    "@types/express": "^4.17.13"
+  }
+}

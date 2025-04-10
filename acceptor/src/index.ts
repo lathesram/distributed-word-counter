@@ -6,11 +6,10 @@ app.use(express.json());
 
 const PORT = 4002;
 
-const acceptedData: Record<string, number> = {};
+let acceptedData: Record<string, number> = {};
 
 const COORDINATOR_URL = "http://coordinator:4000"; // Coordinator runs inside Docker
 const LEARNER_URL = "http://learner:4003";
-
 
 // Register with Coordinator
 axios
@@ -22,31 +21,37 @@ axios
   .catch((err) => console.error("Registration failed", err));
 
 app.listen(PORT, () => {
-    console.log(`Acceptor running on http://localhost:${PORT}`);
+  console.log(`Acceptor running on http://localhost:${PORT}`);
 });
 
-app.post("/accept", (req: Request, res: Response) => {
-    const { wordCounts } = req.body;
+app.post("/accept", async (req: Request, res: Response) => {
+  const { wordCounts } = req.body;
 
-    if (!wordCounts || typeof wordCounts !== "object") {
-        return res.status(400).json({ message: "Invalid data" });
-    }
+  if (!wordCounts || typeof wordCounts !== "object") {
+    return res.status(400).json({ message: "Invalid data" });
+  }
 
-    for (const [word, count] of Object.entries(wordCounts)) {
-        acceptedData[word] = (acceptedData[word] || 0) + (count as number);
-    }
+  for (const [word, count] of Object.entries(wordCounts)) {
+    acceptedData[word] = (acceptedData[word] || 0) + (count as number);
+  }
 
-    console.log("Accepted updated counts:", acceptedData);
+  console.log("Accepted updated counts:", acceptedData);
 
-    axios.post(`${LEARNER_URL}/learn`, { wordCounts })
-    .then(() => console.log("Forwarded counts to Learner"))
-    .catch(err => console.error("Failed to send to learner", err));
+  await axios.post("http://sidecar:4999/send", {
+    target: `${LEARNER_URL}/learn`,
+    payload: { wordCounts, from: "acceptor" },
+    source: "Acceptor",
+  });
 
-    res.json({ message: "Counts accepted" });
+  res.json({ message: "Counts accepted" });
 });
+
+app.post("/reset", (req, res) => {
+    acceptedData = {};
+    console.log("word counts reset.");
+    res.json({ message: "Learner state has been reset." });
+  });
 
 app.get("/accepted", (req, res) => {
-    res.json({ acceptedData });
+  res.json({ acceptedData });
 });
-
-

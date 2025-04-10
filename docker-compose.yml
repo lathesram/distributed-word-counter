@@ -5,7 +5,7 @@ services:
       - "4000:4000"
     networks:
       - distributed-net
-  
+
   acceptor:
     build: ./acceptor
     depends_on:
@@ -51,7 +51,23 @@ services:
     networks:
       - distributed-net
 
+  acceptor_2:
+    build: ./acceptor_2
+    depends_on:
+      - coordinator
+    ports:
+      - "4006:4006"
+    networks:
+      - distributed-net
 
+  sidecar:
+    build: ./sidecar
+    depends_on:
+      - coordinator
+    ports:
+      - "4999:4999"
+    networks:
+      - distributed-net
 
 networks:
   distributed-net:

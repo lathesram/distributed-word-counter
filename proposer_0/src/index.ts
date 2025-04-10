@@ -7,7 +7,7 @@ app.use(express.json());
 const PORT = 4001;
 const COORDINATOR_URL = "http://coordinator:4000"; // Coordinator runs inside Docker
 
-const wordCounts: Record<string, number> = {};
+let wordCounts: Record<string, number> = {};
 let acceptors: string[] = [];
 
 // Helper function to normalize and split words
@@ -47,8 +47,11 @@ const fetchAcceptors = async () => {
 const sendWordCountsToAcceptors = async () => {
   for (const acceptorUrl of acceptors) {
     try {
-      await axios.post(`${acceptorUrl}/accept`, { wordCounts });
-      console.log(`Sent counts to ${acceptorUrl}`);
+      await axios.post("http://sidecar:4999/send", {
+        target: `${acceptorUrl}/accept`,
+        payload: { wordCounts },
+        source: "Proposer_0",
+      });
     } catch (err) {
       console.error("Failed to send to acceptor", err);
     }
@@ -84,6 +87,12 @@ app.post("/process", async (req, res) => {
 // Endpoint to get current word counts
 app.get("/counts", (req, res) => {
   res.json({ wordCounts });
+});
+
+app.post("/reset", (req, res) => {
+  wordCounts = {};
+  console.log("word counts reset.");
+  res.json({ message: "Learner state has been reset." });
 });
 
 // Start the server
