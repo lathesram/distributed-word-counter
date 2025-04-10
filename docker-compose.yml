@@ -1,0 +1,58 @@
+services:
+  coordinator:
+    build: ./coordinator
+    ports:
+      - "4000:4000"
+    networks:
+      - distributed-net
+  
+  acceptor:
+    build: ./acceptor
+    depends_on:
+      - coordinator
+    ports:
+      - "4002:4002"
+    networks:
+      - distributed-net
+
+  learner:
+    build: ./learner
+    depends_on:
+      - coordinator
+    ports:
+      - "4003:4003"
+    networks:
+      - distributed-net
+
+  proposer_0:
+    build: ./proposer_0
+    depends_on:
+      - coordinator
+    ports:
+      - "4001:4001"
+    networks:
+      - distributed-net
+
+  proposer_1:
+    build: ./proposer_1
+    depends_on:
+      - coordinator
+    ports:
+      - "4004:4004"
+    networks:
+      - distributed-net
+
+  proposer_2:
+    build: ./proposer_2
+    depends_on:
+      - coordinator
+    ports:
+      - "4005:4005"
+    networks:
+      - distributed-net
+
+
+
+networks:
+  distributed-net:
+    driver: bridge
