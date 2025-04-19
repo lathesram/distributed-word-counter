@@ -11,6 +11,17 @@ const pendingValidations: Record<string, Set<string>> = {};
 const submitters: Record<string, Set<string>> = {};
 let finalCounts: Record<string, number> = {};
 
+type FinalCounts = {
+  [word: string]: number;
+};
+
+type Result = {
+  [letter: string]: {
+    total: number;
+    words: string;
+  };
+};
+
 // Register with Coordinator
 const registerWithCoordinator = async () => {
   try {
@@ -25,6 +36,26 @@ const registerWithCoordinator = async () => {
 };
 
 registerWithCoordinator();
+
+function getFormattedCount(finalCounts: Record<string, number>): Result {
+  const result: Result = {};
+
+  for (const [word, count] of Object.entries(finalCounts)) {
+    const letter = word[0].toLowerCase();
+
+    if (!result[letter]) {
+      result[letter] = {
+        total: 0,
+        words: ''
+      };
+    }
+
+    result[letter].total += count;
+    result[letter].words += result[letter].words ? `, ${word}` : word;
+  }
+
+  return result;
+}
 
 // Endpoint to learn word counts
 app.post("/learn", (req: Request, res: Response) => {
@@ -64,7 +95,7 @@ app.post("/learn", (req: Request, res: Response) => {
 
 // Endpoint to retrieve final word counts
 app.get("/final", (_req: Request, res: Response) => {
-  res.json({ finalCounts });
+  res.json(getFormattedCount(finalCounts));
 });
 
 app.post("/reset", (req: Request, res: Response) => {
